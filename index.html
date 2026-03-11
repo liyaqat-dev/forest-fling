@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Forest Fling - Deluxe Edition</title>
+    <style>
+        :root { --primary: #4a7c44; --accent: #ff9800; --bg: #87CEEB; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Comic Sans MS', cursive, sans-serif; touch-action: none; }
+        canvas { display: block; background: linear-gradient(var(--bg) 70%, #4a7c44 70%); }
+        
+        .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(135, 206, 235, 0.95); z-index: 100; transition: 0.3s; }
+        .hidden { display: none !important; }
+        
+        h1 { color: #2d4a27; font-size: 3.5rem; text-shadow: 3px 3px white; margin-bottom: 20px; text-align: center; }
+        button { cursor: pointer; padding: 12px 35px; font-size: 1.3rem; font-family: inherit; font-weight: bold; border-radius: 50px; border: 4px solid #2d4a27; background: white; color: #2d4a27; margin: 8px; transition: 0.2s; outline: none; }
+        button:hover { transform: scale(1.1); background: var(--accent); color: white; }
+
+        .insta-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #E1306C; font-weight: bold; margin: 20px; font-size: 1.2rem; }
+        .insta-icon { width: 30px; height: 30px; background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%,#d6249f 60%,#285AEB 90%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; }
+
+        .char-container { display: flex; width: 90%; max-width: 800px; background: white; border-radius: 30px; border: 5px solid var(--primary); overflow: hidden; height: 75vh; }
+        .char-preview { flex: 1; background: #f0f9ff; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 4px solid #eee; }
+        .char-options { flex: 1.2; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        
+        .name-input { padding: 10px; border: 3px solid var(--primary); border-radius: 10px; font-family: inherit; font-size: 1.1rem; width: 80%; margin-bottom: 15px; text-align: center; }
+
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; }
+        .lvl-btn { width: 50px; height: 50px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 1.2rem; }
+        .locked { background: #99aab5; opacity: 0.6; cursor: not-allowed; transform: none !important; }
+        .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 15px; }
+        .swatch { width: 35px; height: 35px; border-radius: 50%; border: 3px solid #ddd; cursor: pointer; transition: 0.2s; }
+        .shape-btn { width: 50px; height: 50px; background: white; border: 3px solid #2d4a27; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; }
+
+        #game-ui { position: fixed; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 10; display: none; }
+        .stats { font-size: 1.1rem; font-weight: bold; background: rgba(255,255,255,0.8); padding: 8px 20px; border-radius: 50px; display: inline-block; border: 2px solid var(--primary); pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+    <div id="home-screen" class="screen">
+        <h1>Forest Fling</h1>
+        <button onclick="showScreen('level-screen')">PLAY</button>
+        <button onclick="showScreen('char-screen')">CHARACTER</button>
+        <button onclick="showScreen('credits-screen')">CREDITS</button>
+    </div>
+
+    <div id="level-screen" class="screen hidden">
+        <h1>Select Level</h1>
+        <div id="level-grid" class="grid"></div>
+        <button onclick="showScreen('home-screen')">BACK</button>
+    </div>
+
+    <div id="credits-screen" class="screen hidden">
+        <h1>Credits</h1>
+        <p style="font-size: 1.2rem; color: #2d4a27;">Forest Fling - Deluxe Edition</p>
+        <a href="https://www.instagram.com/_am_i_liy.xq.xt/?hl=en" target="_blank" class="insta-link">
+            <div class="insta-icon">📸</div> @_am_i_liy.xq.xt
+        </a>
+        <button onclick="showScreen('home-screen')">BACK</button>
+    </div>
+
+    <div id="char-screen" class="screen hidden">
+        <div class="char-container">
+            <div class="char-preview">
+                <canvas id="previewCanvas" width="200" height="200"></canvas>
+                <h2 id="previewName" style="color:var(--primary)">Scout</h2>
+            </div>
+            <div class="char-options">
+                <h3>Name Your Hero</h3>
+                <input type="text" id="nameInput" class="name-input" maxlength="12" placeholder="Enter Name..." oninput="updateName(this.value)">
+                <h3>Shape</h3>
+                <div class="row">
+                    <div class="shape-btn" onclick="setShape('circle')">●</div>
+                    <div class="shape-btn" onclick="setShape('square')">■</div>
+                    <div class="shape-btn" onclick="setShape('triangle')">▲</div>
+                </div>
+                <h3>Color</h3>
+                <div id="color-row" class="row"></div>
+                <button onclick="showScreen('home-screen')" style="margin-top:auto">SAVE & EXIT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="victory-screen" class="screen hidden">
+        <h1 style="color: #2e7d32; font-size: 4rem;">VICTORY!</h1>
+        <button onclick="nextLevel()">NEXT LEVEL</button>
+        <button onclick="showScreen('level-screen')">MAP</button>
+    </div>
+
+    <div id="game-ui">
+        <div class="stats">
+            Lvl: <span id="cur-lvl">1</span> | Throws: <span id="attempts">0</span> | Scouts: <span id="targets">0</span>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const pCanvas = document.getElementById('previewCanvas');
+        const pCtx = pCanvas.getContext('2d');
+        
+        let width, height, frameCount = 0;
+        let gameState = 'MENU';
+        let currentLvl = 1;
+        let unlockedLvls = parseInt(localStorage.getItem('fling_unlocked')) || 1;
+        let charConfig = JSON.parse(localStorage.getItem('fling_char')) || { shape: 'circle', color: '#ff9800', name: 'Scout' };
+
+        let blinkState = 0, blinkProgress = 0, nextBlinkFrame = 120;
+        let sling = { x: 180, y: 0, forkDist: 35, forkHeight: 40 };
+        let bird = { x: 0, y: 0, vx: 0, vy: 0, radius: 24, active: false, grabbed: false };
+        let blocks = [], enemies = [];
+        let gravity = 0.28;
+        let attempts = 0;
+        let mouse = { x: 0, y: 0 };
+
+        const colors = ['#ff9800', '#e91e63', '#9c27b0', '#3f51b5', '#2196f3', '#00bcd4', '#4caf50', '#ffeb3b', '#795548', '#607d8b'];
+
+        function init() {
+            document.getElementById('nameInput').value = charConfig.name;
+            document.getElementById('previewName').innerText = charConfig.name;
+            const grid = document.getElementById('level-grid');
+            grid.innerHTML = '';
+            for(let i=1; i<=10; i++) {
+                const btn = document.createElement('button');
+                btn.className = `lvl-btn ${i > unlockedLvls ? 'locked' : ''}`;
+                btn.innerText = i;
+                btn.onclick = () => { if(i <= unlockedLvls) startLevel(i); };
+                grid.appendChild(btn);
+            }
+            const colorRow = document.getElementById('color-row');
+            colorRow.innerHTML = '';
+            colors.forEach(c => {
+                const s = document.createElement('div');
+                s.className = 'swatch';
+                s.style.background = c;
+                s.onclick = () => { charConfig.color = c; saveChar(); };
+                colorRow.appendChild(s);
+            });
+        }
+
+        function updateBlink() {
+            if (frameCount >= nextBlinkFrame && blinkState === 0) blinkState = 1;
+            if (blinkState === 1) {
+                blinkProgress += 0.25; if (blinkProgress >= 1) blinkState = 2;
+            } else if (blinkState === 2) {
+                blinkProgress -= 0.25; if (blinkProgress <= 0) { blinkState = 0; nextBlinkFrame = frameCount + 120 + Math.random() * 300; }
+            }
+        }
+
+        function drawCharacter(context, x, y, radius, config, isEnemy = false) {
+            context.save();
+            context.translate(x, y);
+            context.fillStyle = isEnemy ? "#333" : (config.color || "#ff9800");
+            context.strokeStyle = isEnemy ? "#ff0000" : "rgba(0,0,0,0.15)";
+            context.lineWidth = 4;
+            context.beginPath();
+            let shape = isEnemy ? 'circle' : config.shape;
+            if(shape === 'circle') context.arc(0, 0, radius, 0, Math.PI*2);
+            else if(shape === 'square') context.rect(-radius, -radius, radius*2, radius*2);
+            else { context.moveTo(0, -radius); context.lineTo(radius, radius); context.lineTo(-radius, radius); context.closePath(); }
+            context.fill(); context.stroke();
+
+            const eyeY = -radius * 0.2;
+            const eyeSpacing = radius * 0.4;
+            const eyeSize = radius * 0.25;
+            const scaleY = isEnemy ? 1 : (1 - blinkProgress);
+
+            [-1, 1].forEach(side => {
+                context.fillStyle = "white";
+                context.beginPath();
+                context.ellipse(side * eyeSpacing, eyeY, eyeSize, eyeSize * scaleY, 0, 0, Math.PI*2);
+                context.fill();
+                context.fillStyle = isEnemy ? "red" : "black";
+                context.beginPath();
+                context.arc(side * eyeSpacing, eyeY, eyeSize * 0.5, 0, Math.PI*2);
+                context.fill();
+            });
+            context.restore();
+        }
+
+        function initLevel() {
+            sling.y = height - 160;
+            resetBird();
+            blocks = []; enemies = [];
+            const startX = width - 250;
+            const groundY = height - 75;
+
+            for(let h=0; h < Math.min(3, 1 + Math.floor(currentLvl/3)); h++) {
+                const yBase = groundY - (h * 120);
+                blocks.push({ x: startX, y: yBase - 50, w: 20, h: 100, vy: 0, rot: 0, vr: 0, broken: false });
+                blocks.push({ x: startX + 100, y: yBase - 50, w: 20, h: 100, vy: 0, rot: 0, vr: 0, broken: false });
+                blocks.push({ x: startX + 50, y: yBase - 110, w: 140, h: 20, vy: 0, rot: 0, vr: 0, broken: false });
+                enemies.push({ x: startX + 50, y: yBase - 25, radius: 22, dead: false });
+            }
+            updateUI();
+        }
+
+        function update() {
+            frameCount++; updateBlink();
+            if(gameState !== 'PLAYING') return;
+            const groundLimit = height - 75;
+
+            if (bird.active) {
+                bird.vy += gravity; bird.x += bird.vx; bird.y += bird.vy;
+                
+                blocks.forEach(b => {
+                    if (!b.broken && Math.hypot(bird.x - b.x, bird.y - b.y) < 60) {
+                        b.broken = true; 
+                        b.vr = (bird.vx * 0.05); // Rotational velocity based on hit speed
+                        b.vx = bird.vx * 0.4;
+                        b.vy = bird.vy * 0.4;
+                    }
+                });
+                if (bird.y > height || bird.x > width || bird.x < 0) resetBird();
+            } else if (bird.grabbed) {
+                const dist = Math.hypot(mouse.x - sling.x, mouse.y - sling.y);
+                const angle = Math.atan2(mouse.y - sling.y, mouse.x - sling.x);
+                bird.x = sling.x + Math.cos(angle) * Math.min(dist, 100);
+                bird.y = sling.y + Math.sin(angle) * Math.min(dist, 100);
+            }
+
+            // Enhanced Physics for Blocks
+            blocks.forEach(b => {
+                if (b.broken) {
+                    b.vy += gravity; 
+                    b.y += b.vy; 
+                    b.x += (b.vx || 0); 
+                    b.rot += b.vr;
+                    
+                    // Air resistance/friction
+                    b.vx *= 0.99;
+                    b.vr *= 0.98;
+
+                    if(b.y + b.h/2 > groundLimit) { 
+                        b.y = groundLimit - b.h/2; 
+                        b.vy *= -0.3; // Bounce damping
+                        b.vr *= 0.5; // Roll damping
+                        b.vx *= 0.8; // Ground friction
+                    }
+                }
+            });
+
+            enemies.forEach(e => {
+                if (!e.dead && bird.active && Math.hypot(bird.x - e.x, bird.y - e.y) < bird.radius + e.radius) {
+                    e.dead = true; updateUI();
+                }
+            });
+
+            if (enemies.length > 0 && enemies.every(en => en.dead)) {
+                gameState = 'VICTORY';
+                if(currentLvl === unlockedLvls && unlockedLvls < 10) { unlockedLvls++; localStorage.setItem('fling_unlocked', unlockedLvls); init(); }
+                setTimeout(() => showScreen('victory-screen'), 1000);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#4a7c44'; ctx.fillRect(0, height - 75, width, 75);
+            
+            // DRAW Y-SLINGSHOT (Back fork and band)
+            ctx.lineWidth = 8; ctx.strokeStyle = '#5d4037';
+            ctx.lineCap = 'round';
+            
+            // Back Band (when pulling)
+            if(bird.grabbed || bird.active === false) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#3e2723';
+                ctx.lineWidth = 4;
+                ctx.moveTo(sling.x - sling.forkDist, sling.y - sling.forkHeight);
+                ctx.lineTo(bird.x, bird.y);
+                ctx.stroke();
+            }
+
+            // Slingshot Frame (Y shape)
+            ctx.lineWidth = 10; ctx.strokeStyle = '#5d4037';
+            ctx.beginPath();
+            ctx.moveTo(sling.x, height - 75); // Base
+            ctx.lineTo(sling.x, sling.y); // Neck
+            ctx.lineTo(sling.x - sling.forkDist, sling.y - sling.forkHeight); // Left Fork
+            ctx.moveTo(sling.x, sling.y);
+            ctx.lineTo(sling.x + sling.forkDist, sling.y - sling.forkHeight); // Right Fork
+            ctx.stroke();
+
+            // Front Band
+            if(bird.grabbed || bird.active === false) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#5d4037';
+                ctx.lineWidth = 4;
+                ctx.moveTo(sling.x + sling.forkDist, sling.y - sling.forkHeight);
+                ctx.lineTo(bird.x, bird.y);
+                ctx.stroke();
+            }
+
+            if(bird.grabbed) {
+                ctx.fillStyle = "rgba(255,255,255,0.5)";
+                let tx = bird.x, ty = bird.y, tvx = (sling.x - bird.x) * 0.18, tvy = (sling.y - bird.y) * 0.18;
+                for(let i=0; i<15; i++) { tvy += gravity; tx += tvx; ty += tvy; ctx.beginPath(); ctx.arc(tx, ty, 3, 0, Math.PI*2); ctx.fill(); }
+            }
+
+            blocks.forEach(b => {
+                ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot);
+                ctx.fillStyle = '#a1887f'; ctx.strokeStyle = '#5d4037';
+                ctx.fillRect(-b.w/2, -b.h/2, b.w, b.h); ctx.strokeRect(-b.w/2, -b.h/2, b.w, b.h);
+                ctx.restore();
+            });
+
+            enemies.forEach(e => { if(!e.dead) drawCharacter(ctx, e.x, e.y, e.radius, {}, true); });
+            drawCharacter(ctx, bird.x, bird.y, bird.radius, charConfig);
+
+            if (!document.getElementById('char-screen').classList.contains('hidden')) {
+                pCtx.clearRect(0,0,200,200); drawCharacter(pCtx, 100, 100, 55, charConfig);
+            }
+        }
+
+        function updateName(val) {
+            charConfig.name = val || "Scout";
+            document.getElementById('previewName').innerText = charConfig.name;
+            saveChar();
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById('game-ui').style.display = id ? 'none' : 'block';
+            if(id) { document.getElementById(id).classList.remove('hidden'); gameState = 'MENU'; }
+            else { gameState = 'PLAYING'; }
+        }
+
+        function loop() { update(); draw(); requestAnimationFrame(loop); }
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; if(gameState === 'PLAYING') initLevel(); }
+        function resetBird() { bird.active = false; bird.grabbed = false; bird.x = sling.x; bird.y = sling.y; bird.vx = 0; bird.vy = 0; }
+        function updateUI() { document.getElementById('cur-lvl').innerText = currentLvl; document.getElementById('attempts').innerText = attempts; document.getElementById('targets').innerText = enemies.filter(e => !e.dead).length; }
+        function setShape(s) { charConfig.shape = s; saveChar(); }
+        function saveChar() { localStorage.setItem('fling_char', JSON.stringify(charConfig)); }
+        function nextLevel() { if(currentLvl < 10) startLevel(currentLvl + 1); else showScreen('home-screen'); }
+        function startLevel(n) { currentLvl = n; attempts = 0; showScreen(null); initLevel(); }
+
+        window.addEventListener('mousedown', e => { if(gameState === 'PLAYING' && Math.hypot(e.clientX - bird.x, e.clientY - bird.y) < 60) bird.grabbed = true; });
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('mouseup', () => { if(bird.grabbed) { bird.grabbed = false; bird.active = true; bird.vx = (sling.x - bird.x) * 0.18; bird.vy = (sling.y - bird.y) * 0.18; attempts++; updateUI(); } });
+        window.addEventListener('resize', resize);
+        
+        init(); resize(); loop();
+    </script>
+</body>
+</html>
